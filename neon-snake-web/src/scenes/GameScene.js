@@ -15,7 +15,9 @@ export default class GameScene extends Phaser.Scene {
         this.moveInterval = 100; // ms per step (starts at speed 10-ish)
 
         this.score = 0;
-        this.highscore = parseInt(localStorage.getItem('neon_snake_highscore') || '0');
+        // Load highscore list for display
+        const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
+        this.highscore = scores.length > 0 ? Math.max(...scores.map(s => s.score)) : 0;
 
         // Graphics object for drawing
         this.graphics = this.add.graphics();
@@ -28,9 +30,20 @@ export default class GameScene extends Phaser.Scene {
         this.scoreText = this.add.text(10, 10, 'Score: 0', {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '20px', color: '#ffffff'
         });
+
         this.highscoreText = this.add.text(this.scale.width - 10, 10, `High: ${this.highscore}`, {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '20px', color: '#ffd700'
         }).setOrigin(1, 0);
+
+        // High Score Button
+        const hsButton = this.add.text(this.scale.width - 10, 40, '🏆 Leaders', {
+            fontFamily: 'Arial', fontSize: '16px', color: '#00ffff'
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+        hsButton.on('pointerdown', () => {
+            this.scene.pause();
+            this.scene.launch('HighScoreScene');
+        });
 
         this.gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER\nTap to Restart', {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '40px', color: '#ff3232', align: 'center'
@@ -214,13 +227,25 @@ export default class GameScene extends Phaser.Scene {
         this.snake.alive = false;
         this.gameOverText.setVisible(true);
 
+        // Save Score
+        const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
+        scores.push({ name: 'Player', score: this.score, date: new Date().toISOString() });
+        scores.sort((a, b) => b.score - a.score);
+        localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
+
+        // Update local highscore display
         if (this.score > this.highscore) {
             this.highscore = this.score;
-            localStorage.setItem('neon_snake_highscore', this.highscore);
             this.highscoreText.setText(`High: ${this.highscore}`);
             this.gameOverText.setText('NEW HIGHSCORE!\nTap to Restart');
         } else {
             this.gameOverText.setText('GAME OVER\nTap to Restart');
         }
+
+        // Auto-show high scores after a short delay
+        this.time.delayedCall(1500, () => {
+            this.scene.pause();
+            this.scene.launch('HighScoreScene');
+        });
     }
 }

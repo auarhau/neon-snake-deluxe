@@ -1,4 +1,5 @@
 import GameScene from './scenes/GameScene.js';
+import HighScoreScene from './scenes/HighScoreScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -17,7 +18,7 @@ const config = {
             debug: false
         }
     },
-    scene: [GameScene]
+    scene: [GameScene, HighScoreScene]
 };
 
 const game = new Phaser.Game(config);
