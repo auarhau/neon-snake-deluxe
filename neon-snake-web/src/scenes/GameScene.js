@@ -127,6 +127,7 @@ export default class GameScene extends Phaser.Scene {
         this.moveInterval = isMobile ? 100 : 67;
         this.pendingDirection = null;
         this.turboEndTime = 0;
+        this.baseFoodCount = 2;
 
         if (this.gameOverText) {
             this.gameOverText.setVisible(false);
@@ -214,7 +215,10 @@ export default class GameScene extends Phaser.Scene {
             if (this.foods[i].isExpired()) {
                 this.foods[i].destroy();
                 this.foods.splice(i, 1);
-                this.spawnFood();
+
+                if (this.foods.length < this.baseFoodCount) {
+                    this.spawnFood();
+                }
             }
         }
 
@@ -261,7 +265,10 @@ export default class GameScene extends Phaser.Scene {
 
                 food.destroy();
                 this.foods.splice(i, 1);
-                this.spawnFood();
+
+                if (this.foods.length < this.baseFoodCount) {
+                    this.spawnFood();
+                }
 
                 this.scoreText.setText(`Score: ${this.score}`);
                 this.cameras.main.shake(100, 0.005);
