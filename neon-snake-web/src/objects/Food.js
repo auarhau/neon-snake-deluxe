@@ -28,6 +28,36 @@ export default class Food {
         return Date.now() - this.spawnTime > this.lifetime;
     }
 
+
+    export const FOOD_TYPES = {
+        'normal': { color: 0xff5050, glow: 0xff7878, score: 10, chance: 70, speedMod: 0 },
+        'gold': { color: 0xffd700, glow: 0xffff96, score: 50, chance: 10, speedMod: 0 },
+        'speed': { color: 0x00ffff, glow: 0x64ffff, score: 20, chance: 10, speedMod: 2 },
+        'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -2 }
+    };
+
+export default class Food {
+    constructor(scene, x, y, type, blockSize) {
+        this.scene = scene;
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.blockSize = blockSize;
+        this.data = FOOD_TYPES[type];
+        this.pulse = 0;
+
+        this.spawnTime = Date.now();
+        this.lifetime = 10000; // 10 seconds
+    }
+
+    update(time, delta) {
+        this.pulse += delta * 0.005;
+    }
+
+    isExpired() {
+        return Date.now() - this.spawnTime > this.lifetime;
+    }
+
     getTimeRemaining() {
         return Math.max(0, this.lifetime - (Date.now() - this.spawnTime));
     }
@@ -62,5 +92,17 @@ export default class Food {
 
         graphics.fillStyle(timePercent > 0.3 ? 0x00ff00 : 0xff0000, 1);
         graphics.fillRect(cx - barWidth / 2, py - 5, barWidth * timePercent, barHeight);
+
+        let label = `+${this.data.score}`;
+        if (this.data.speedMod > 0) label += ' ⚡';
+        else if (this.data.speedMod < 0) label += ' 🐌';
+
+        this.scene.add.text(cx, py + this.blockSize + 2, label, {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5, 0).setDepth(1000);
     }
 }
