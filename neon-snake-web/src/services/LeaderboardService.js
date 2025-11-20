@@ -63,18 +63,14 @@ class LeaderboardService {
 
     async getPlayerRank(score) {
         try {
-            const snapshot = await this.leaderboardRef
-                .orderByChild('score')
-                .startAt(score)
-                .once('value');
+            const allScores = await this.getTopScores(1000);
 
-            const count = snapshot.numChildren();
-            const totalSnapshot = await this.leaderboardRef.once('value');
-            const total = totalSnapshot.numChildren();
+            const rank = allScores.findIndex(s => s.score <= score) + 1;
+            const actualRank = rank === 0 ? allScores.length + 1 : rank;
 
             return {
-                rank: total - count + 1,
-                total: total
+                rank: actualRank,
+                total: allScores.length
             };
         } catch (error) {
             console.error('Error getting player rank:', error);
