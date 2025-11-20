@@ -75,8 +75,6 @@ export default class Snake {
     }
 
     draw(graphics) {
-        graphics.clear();
-
         // Draw glow
         graphics.lineStyle(this.blockSize * 1.5, this.color, 0.3);
         for (let i = 0; i < this.body.length; i++) {
