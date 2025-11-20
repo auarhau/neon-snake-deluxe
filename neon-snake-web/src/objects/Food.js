@@ -24,28 +24,10 @@ export default class Food {
         this.pulse += delta * 0.005;
     }
 
-    draw(graphics) {
-        if (!this.data) {
-            console.error('[Food] No data for food type:', this.type);
-            return;
-        }
-
-        const px = this.x * this.blockSize;
-        const py = this.y * this.blockSize;
-        const cx = px + this.blockSize / 2;
-        const cy = py + this.blockSize / 2;
-
-        // Pulse effect
-        const scale = 1 + Math.sin(this.pulse) * 0.2;
-
-        // Glow
-        graphics.fillStyle(this.data.glow, 0.3);
-        graphics.fillCircle(cx, cy, (this.blockSize * 0.8) * scale);
-
         // Core
         graphics.fillStyle(this.data.color, 1);
         graphics.fillRect(
-            cx - (this.blockSize / 2) * 0.8,
+        cx - (this.blockSize / 2) * 0.8,
             cy - (this.blockSize / 2) * 0.8,
             this.blockSize * 0.8,
             this.blockSize * 0.8
