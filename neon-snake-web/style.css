@@ -1,0 +1,12 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #0f0f19;
+    color: #fff;
+    font-family: sans-serif;
+}
+
+canvas {
+    display: block;
+    border-radius: 4px;
+}
