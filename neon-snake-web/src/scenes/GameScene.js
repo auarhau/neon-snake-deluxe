@@ -38,7 +38,8 @@ export default class GameScene extends Phaser.Scene {
             fontFamily: 'Arial', fontSize: '16px', color: '#00ffff'
         }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
 
-        hsButton.on('pointerdown', () => {
+        hsButton.on('pointerdown', (pointer) => {
+            pointer.event.stopPropagation();
             this.scene.pause();
             this.scene.launch('HighScoreScene');
         });
@@ -51,14 +52,23 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupTouchControls() {
+        this.swipeStartTime = 0;
+
         this.input.on('pointerdown', (pointer) => {
             this.touchStartX = pointer.x;
             this.touchStartY = pointer.y;
+            this.swipeStartTime = Date.now();
         });
 
         this.input.on('pointerup', (pointer) => {
-            if (!this.snake.alive) {
+            const swipeDuration = Date.now() - this.swipeStartTime;
+
+            if (!this.snake.alive && swipeDuration < 300) {
                 this.resetGame();
+                return;
+            }
+
+            if (!this.snake.alive) {
                 return;
             }
 
@@ -66,16 +76,18 @@ export default class GameScene extends Phaser.Scene {
             const dx = pointer.x - this.touchStartX;
             const dy = pointer.y - this.touchStartY;
 
+            const swipeDistance = Math.sqrt(dx * dx + dy * dy);
+
+            if (swipeDistance < swipeThreshold) {
+                return;
+            }
+
             let newDx = 0, newDy = 0;
 
             if (Math.abs(dx) > Math.abs(dy)) {
-                if (Math.abs(dx) > swipeThreshold) {
-                    newDx = dx > 0 ? 1 : -1;
-                }
+                newDx = dx > 0 ? 1 : -1;
             } else {
-                if (Math.abs(dy) > swipeThreshold) {
-                    newDy = dy > 0 ? 1 : -1;
-                }
+                newDy = dy > 0 ? 1 : -1;
             }
 
             if (newDx !== 0 || newDy !== 0) {
