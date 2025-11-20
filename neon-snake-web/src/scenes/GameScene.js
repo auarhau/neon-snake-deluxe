@@ -53,32 +53,42 @@ export default class GameScene extends Phaser.Scene {
 
     setupTouchControls() {
         this.swipeStartTime = 0;
+        this.isSwipeInProgress = false;
 
         this.input.on('pointerdown', (pointer) => {
             this.touchStartX = pointer.x;
             this.touchStartY = pointer.y;
             this.swipeStartTime = Date.now();
+            this.isSwipeInProgress = false;
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (!pointer.isDown) return;
+
+            const dx = pointer.x - this.touchStartX;
+            const dy = pointer.y - this.touchStartY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 10) {
+                this.isSwipeInProgress = true;
+            }
         });
 
         this.input.on('pointerup', (pointer) => {
             const swipeDuration = Date.now() - this.swipeStartTime;
 
-            if (!this.snake.alive && swipeDuration < 300) {
-                this.resetGame();
-                return;
-            }
-
             if (!this.snake.alive) {
+                if (!this.isSwipeInProgress && swipeDuration < 300) {
+                    this.resetGame();
+                }
                 return;
             }
 
-            const swipeThreshold = 30;
             const dx = pointer.x - this.touchStartX;
             const dy = pointer.y - this.touchStartY;
-
             const swipeDistance = Math.sqrt(dx * dx + dy * dy);
 
-            if (swipeDistance < swipeThreshold) {
+            if (swipeDistance < 30) {
                 return;
             }
 
@@ -269,10 +279,5 @@ export default class GameScene extends Phaser.Scene {
         } else {
             this.gameOverText.setText('GAME OVER\nTap to Restart');
         }
-
-        this.time.delayedCall(1500, () => {
-            this.scene.pause();
-            this.scene.launch('HighScoreScene');
-        });
     }
 }
