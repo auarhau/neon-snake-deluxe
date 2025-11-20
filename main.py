@@ -37,15 +37,10 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Neon Snake Deluxe')
 clock = pygame.time.Clock()
 
-# Prøver å laste en fin font, ellers standard
-try:
-    game_font = pygame.font.SysFont(FONT_NAME, 25)
-    title_font = pygame.font.SysFont(FONT_NAME, 50)
-    small_font = pygame.font.SysFont(FONT_NAME, 18)
-except:
-    game_font = pygame.font.SysFont(None, 25)
-    title_font = pygame.font.SysFont(None, 50)
-    small_font = pygame.font.SysFont(None, 18)
+# Bruker default font for bedre web-kompatibilitet
+game_font = pygame.font.SysFont(None, 25)
+title_font = pygame.font.SysFont(None, 50)
+small_font = pygame.font.SysFont(None, 18)
 
 # --- FUNKSJONER ---
 
@@ -113,7 +108,7 @@ def draw_text(surf, text, font, color, pos):
     rect = text_surface.get_rect(center=pos)
     surf.blit(text_surface, rect)
 
-def get_name_input():
+async def get_name_input():
     """Får navn fra brukeren via tastaturinput."""
     name = ""
     input_active = True
@@ -157,7 +152,7 @@ def get_name_input():
         screen.blit(hint_text, (SCREEN_WIDTH/2 - hint_text.get_width()/2, SCREEN_HEIGHT/2 + 40))
         
         pygame.display.update()
-        clock.tick(30)
+        await asyncio.sleep(0)
     
     return name if name else "Spiller"
 
@@ -539,9 +534,9 @@ class SnakeGame:
         high_text = game_font.render(f"High: {self.highscore}", True, (255, 215, 0))
         screen.blit(high_text, [SCREEN_WIDTH - 160, 10])
 
-    def show_game_over(self):
+    async def show_game_over(self):
         # Få navn fra brukeren
-        player_name = get_name_input()
+        player_name = await get_name_input()
         if player_name is None:
             return True  # Brukeren avbrøt
         
@@ -612,7 +607,7 @@ class SnakeGame:
             screen.blit(hint_text, (SCREEN_WIDTH/2 - hint_text.get_width()/2, SCREEN_HEIGHT - 50))
             
             pygame.display.update()
-            clock.tick(30)
+            await asyncio.sleep(0)
         
         return False
 
@@ -629,7 +624,7 @@ async def main():
         print("Spill-loop starter...")
         while not quit_game:
             if game.game_close:
-                quit_game = game.show_game_over()
+                quit_game = await game.show_game_over()
             else:
                 quit_game = game.play_step()
             
