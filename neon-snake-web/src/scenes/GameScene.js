@@ -16,7 +16,7 @@ export default class GameScene extends Phaser.Scene {
 
         const isMobile = this.scale.width < 600;
         this.moveInterval = isMobile ? 100 : 67;
-        this.pendingDirection = null;
+        this.moveQueue = [];
 
         this.score = 0;
         const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
@@ -108,9 +108,31 @@ export default class GameScene extends Phaser.Scene {
             }
 
             if (newDx !== 0 || newDy !== 0) {
-                this.pendingDirection = { dx: newDx, dy: newDy };
+                this.queueMove(newDx, newDy);
             }
         });
+    }
+
+    queueMove(dx, dy) {
+        // Limit queue size to prevent huge input lag
+        if (this.moveQueue.length >= 2) return;
+
+        // Determine the direction to check against (last queued or current)
+        const lastMove = this.moveQueue.length > 0
+            ? this.moveQueue[this.moveQueue.length - 1]
+            : this.snake.direction;
+
+        // Prevent 180 degree turns relative to the PLANNED direction
+        if (lastMove.x + dx === 0 && lastMove.y + dy === 0) {
+            return;
+        }
+
+        // Prevent duplicate moves (spamming same direction)
+        if (lastMove.x === dx && lastMove.y === dy) {
+            return;
+        }
+
+        this.moveQueue.push({ x: dx, y: dy });
     }
 
     resetGame() {
@@ -126,7 +148,7 @@ export default class GameScene extends Phaser.Scene {
         this.score = 0;
         const isMobile = this.scale.width < 600;
         this.moveInterval = isMobile ? 100 : 67;
-        this.pendingDirection = null;
+        this.moveQueue = [];
         this.turboEndTime = 0;
         this.baseFoodCount = 2;
 
@@ -182,14 +204,15 @@ export default class GameScene extends Phaser.Scene {
 
     update(time, delta) {
         if (this.snake.alive) {
-            if (this.cursors.left.isDown && !this.pendingDirection) {
-                this.pendingDirection = { dx: -1, dy: 0 };
-            } else if (this.cursors.right.isDown && !this.pendingDirection) {
-                this.pendingDirection = { dx: 1, dy: 0 };
-            } else if (this.cursors.up.isDown && !this.pendingDirection) {
-                this.pendingDirection = { dx: 0, dy: -1 };
-            } else if (this.cursors.down.isDown && !this.pendingDirection) {
-                this.pendingDirection = { dx: 0, dy: 1 };
+            // Check for new inputs and queue them
+            if (this.cursors.left.isDown) {
+                this.queueMove(-1, 0);
+            } else if (this.cursors.right.isDown) {
+                this.queueMove(1, 0);
+            } else if (this.cursors.up.isDown) {
+                this.queueMove(0, -1);
+            } else if (this.cursors.down.isDown) {
+                this.queueMove(0, 1);
             }
         }
 
@@ -199,9 +222,10 @@ export default class GameScene extends Phaser.Scene {
             this.lastMoveTime = time;
 
             if (this.snake.alive) {
-                if (this.pendingDirection) {
-                    this.snake.setDirection(this.pendingDirection.dx, this.pendingDirection.dy);
-                    this.pendingDirection = null;
+                // Apply next move from queue if available
+                if (this.moveQueue.length > 0) {
+                    const nextMove = this.moveQueue.shift();
+                    this.snake.setDirection(nextMove.x, nextMove.y);
                 }
 
                 this.snake.update(time);
