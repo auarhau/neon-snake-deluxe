@@ -617,7 +617,10 @@ class SnakeGame:
         return False
 
 # --- KJØR SPILLET ---
-def main():
+import asyncio
+
+# --- KJØR SPILLET ---
+async def main():
     try:
         print("Starter spillet...")
         game = SnakeGame()
@@ -629,6 +632,10 @@ def main():
                 quit_game = game.show_game_over()
             else:
                 quit_game = game.play_step()
+            
+            # Viktig for web: Gi kontroll tilbake til nettleseren
+            await asyncio.sleep(0)
+            
     except Exception as e:
         print(f"FEIL I SPILLET: {e}")
         import traceback
@@ -637,5 +644,5 @@ def main():
         pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
 
