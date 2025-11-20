@@ -151,61 +151,86 @@ export default class GameScene extends Phaser.Scene {
                     this.gameOver();
                 }
 
-                for (let i = this.foods.length - 1; i >= 0; i--) {
-                    const food = this.foods[i];
-                    if (head.x === food.x && head.y === food.y) {
-                        this.score += food.data.score;
-                        this.snake.grow();
-
-                        if (food.data.speedMod !== 0) {
-                            this.moveInterval -= food.data.speedMod * 2;
-                            this.moveInterval = Phaser.Math.Clamp(this.moveInterval, 30, 200);
-                        }
-
-                        this.foods.splice(i, 1);
-                        this.spawnFood();
-
-                        this.scoreText.setText(`Score: ${this.score}`);
-                        this.cameras.main.shake(100, 0.005);
-                    }
-                }
-            }
-
-            drawGrid() {
-                this.graphics.lineStyle(1, 0x191923);
-                for (let x = 0; x <= this.scale.width; x += this.blockSize * 2) {
-                    this.graphics.moveTo(x, 0);
-                    this.graphics.lineTo(x, this.scale.height);
-                }
-                for (let y = 0; y <= this.scale.height; y += this.blockSize * 2) {
-                    this.graphics.moveTo(0, y);
-                    this.graphics.lineTo(this.scale.width, y);
-                }
-                this.graphics.strokePath();
-            }
-
-            gameOver() {
-                this.snake.alive = false;
-                this.gameOverText.setVisible(true);
-
-                const playerName = prompt('Game Over! Enter your name:', 'Player') || 'Player';
-
-                const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
-                scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
-                scores.sort((a, b) => b.score - a.score);
-                localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
-
-                if (this.score > this.highscore) {
-                    this.highscore = this.score;
-                    this.highscoreText.setText(`High: ${this.highscore}`);
-                    this.gameOverText.setText('NEW HIGHSCORE!\nTap to Restart');
-                } else {
-                    this.gameOverText.setText('GAME OVER\nTap to Restart');
-                }
-
-                this.time.delayedCall(1500, () => {
-                    this.scene.pause();
-                    this.scene.launch('HighScoreScene');
-                });
+                this.checkFoodCollision();
             }
         }
+
+        this.graphics.clear();
+        this.drawGrid();
+
+        for (let i = this.foods.length - 1; i >= 0; i--) {
+            if (this.foods[i].isExpired()) {
+                this.foods.splice(i, 1);
+                this.spawnFood();
+            }
+        }
+
+        for (const food of this.foods) {
+            food.update(time, delta);
+            food.draw(this.graphics);
+        }
+
+        this.snake.draw(this.graphics);
+    }
+
+    checkFoodCollision() {
+        const head = this.snake.body[0];
+
+        for (let i = this.foods.length - 1; i >= 0; i--) {
+            const food = this.foods[i];
+            if (head.x === food.x && head.y === food.y) {
+                this.score += food.data.score;
+                this.snake.grow();
+
+                if (food.data.speedMod !== 0) {
+                    this.moveInterval -= food.data.speedMod * 2;
+                    this.moveInterval = Phaser.Math.Clamp(this.moveInterval, 30, 200);
+                }
+
+                this.foods.splice(i, 1);
+                this.spawnFood();
+
+                this.scoreText.setText(`Score: ${this.score}`);
+                this.cameras.main.shake(100, 0.005);
+            }
+        }
+    }
+
+    drawGrid() {
+        this.graphics.lineStyle(1, 0x191923);
+        for (let x = 0; x <= this.scale.width; x += this.blockSize * 2) {
+            this.graphics.moveTo(x, 0);
+            this.graphics.lineTo(x, this.scale.height);
+        }
+        for (let y = 0; y <= this.scale.height; y += this.blockSize * 2) {
+            this.graphics.moveTo(0, y);
+            this.graphics.lineTo(this.scale.width, y);
+        }
+        this.graphics.strokePath();
+    }
+
+    gameOver() {
+        this.snake.alive = false;
+        this.gameOverText.setVisible(true);
+
+        const playerName = prompt('Game Over! Enter your name:', 'Player') || 'Player';
+
+        const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
+        scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
+        scores.sort((a, b) => b.score - a.score);
+        localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
+
+        if (this.score > this.highscore) {
+            this.highscore = this.score;
+            this.highscoreText.setText(`High: ${this.highscore}`);
+            this.gameOverText.setText('NEW HIGHSCORE!\nTap to Restart');
+        } else {
+            this.gameOverText.setText('GAME OVER\nTap to Restart');
+        }
+
+        this.time.delayedCall(1500, () => {
+            this.scene.pause();
+            this.scene.launch('HighScoreScene');
+        });
+    }
+}
