@@ -182,10 +182,15 @@ export default class GameScene extends Phaser.Scene {
 
     update(time, delta) {
         if (this.snake.alive) {
-            if (this.cursors.left.isDown) this.snake.setDirection(-1, 0);
-            else if (this.cursors.right.isDown) this.snake.setDirection(1, 0);
-            else if (this.cursors.up.isDown) this.snake.setDirection(0, -1);
-            else if (this.cursors.down.isDown) this.snake.setDirection(0, 1);
+            if (this.cursors.left.isDown && !this.pendingDirection) {
+                this.pendingDirection = { dx: -1, dy: 0 };
+            } else if (this.cursors.right.isDown && !this.pendingDirection) {
+                this.pendingDirection = { dx: 1, dy: 0 };
+            } else if (this.cursors.up.isDown && !this.pendingDirection) {
+                this.pendingDirection = { dx: 0, dy: -1 };
+            } else if (this.cursors.down.isDown && !this.pendingDirection) {
+                this.pendingDirection = { dx: 0, dy: 1 };
+            }
         }
 
         const effectiveInterval = this.turboEndTime > Date.now() ? this.moveInterval / 2 : this.moveInterval;
