@@ -55,6 +55,63 @@ export default class GameScene extends Phaser.Scene {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '40px', color: '#ff3232', align: 'center'
         }).setOrigin(0.5).setVisible(false);
 
+        this.resetGame();
+    }
+
+    setupTouchControls() {
+        this.swipeStartTime = 0;
+        this.isSwipeInProgress = false;
+
+        this.input.on('pointerdown', (pointer) => {
+            this.touchStartX = pointer.x;
+            this.touchStartY = pointer.y;
+            this.swipeStartTime = Date.now();
+            this.isSwipeInProgress = false;
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (!pointer.isDown) return;
+
+            const dx = pointer.x - this.touchStartX;
+            const dy = pointer.y - this.touchStartY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Threshold for detecting a swipe (reduced to 20 for responsiveness)
+            if (distance > 20) {
+                this.isSwipeInProgress = true;
+
+                if (this.snake.alive) {
+                    let newDx = 0, newDy = 0;
+
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        newDx = dx > 0 ? 1 : -1;
+                    } else {
+                        newDy = dy > 0 ? 1 : -1;
+                    }
+
+                    if (newDx !== 0 || newDy !== 0) {
+                        this.queueMove(newDx, newDy);
+
+                        // Reset start position to current to allow continuous swiping
+                        this.touchStartX = pointer.x;
+                        this.touchStartY = pointer.y;
+                    }
+                }
+            }
+        });
+
+        this.input.on('pointerup', (pointer) => {
+            const swipeDuration = Date.now() - this.swipeStartTime;
+
+            if (!this.snake.alive) {
+                if (!this.isSwipeInProgress && swipeDuration < 300) {
+                    this.resetGame();
+                }
+            }
+        });
+    }
+
+    queueMove(dx, dy) {
         // Limit queue size to prevent huge input lag
         if (this.moveQueue.length >= 2) return;
 
