@@ -143,6 +143,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this.foods.push(new Food(this, x, y, type, this.blockSize));
+        console.log(`[GameScene] Spawned ${type} food at (${x}, ${y}). Total foods: ${this.foods.length}`);
     }
 
     update(time, delta) {
