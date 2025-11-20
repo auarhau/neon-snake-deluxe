@@ -1,4 +1,3 @@
-import Phaser from 'https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.esm.js';
 import Snake from '../objects/Snake.js';
 import Food, { FOOD_TYPES } from '../objects/Food.js';
 

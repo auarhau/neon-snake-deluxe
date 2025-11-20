@@ -1,4 +1,4 @@
-import Phaser from 'https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.esm.js';
+
 
 export const FOOD_TYPES = {
     'normal': { color: 0xff5050, glow: 0xff7878, score: 10, chance: 70, speedMod: 0 },

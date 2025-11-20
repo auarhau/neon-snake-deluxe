@@ -1,4 +1,3 @@
-import Phaser from 'https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.esm.js';
 import GameScene from './scenes/GameScene.js';
 
 const config = {
@@ -22,3 +21,7 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+if (window.gameLoaded) {
+    window.gameLoaded();
+}
