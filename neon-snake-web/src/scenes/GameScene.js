@@ -288,37 +288,25 @@ export default class GameScene extends Phaser.Scene {
             this.graphics.lineTo(this.scale.width, y);
         }
         this.graphics.strokePath();
-    }
+        playerName = prompt('Top 10! Enter your name:', 'Player') || 'Player';
+        scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
+    } else {
+    scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
+}
 
-    async gameOver() {
-        this.snake.alive = false;
-        this.gameOverText.setVisible(true);
+scores.sort((a, b) => b.score - a.score);
+localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
 
-        const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
+await LeaderboardService.saveScore(playerName, this.score);
 
-        const isTopTen = scores.length < 10 || this.score > scores[scores.length - 1].score;
+const rankInfo = await LeaderboardService.getPlayerRank(this.score);
 
-        let playerName = 'Player';
-        if (isTopTen) {
-            playerName = prompt('Top 10! Enter your name:', 'Player') || 'Player';
-            scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
-        } else {
-            scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
-        }
-
-        scores.sort((a, b) => b.score - a.score);
-        localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
-
-        await LeaderboardService.saveScore(playerName, this.score);
-
-        const rankInfo = await LeaderboardService.getPlayerRank(this.score);
-
-        if (this.score > this.highscore) {
-            this.highscore = this.score;
-            this.highscoreText.setText(`High: ${this.highscore}`);
-            this.gameOverText.setText(`NEW HIGHSCORE!\nGlobal Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
-        } else {
-            this.gameOverText.setText(`GAME OVER\nGlobal Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
-        }
+if (this.score > this.highscore) {
+    this.highscore = this.score;
+    this.highscoreText.setText(`High: ${this.highscore}`);
+    this.gameOverText.setText(`NEW HIGHSCORE!\nGlobal Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
+} else {
+    this.gameOverText.setText(`GAME OVER\nGlobal Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
+}
     }
 }
