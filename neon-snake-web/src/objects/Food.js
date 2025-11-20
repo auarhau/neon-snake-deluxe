@@ -15,10 +15,53 @@ export default class Food {
         this.blockSize = blockSize;
         this.data = FOOD_TYPES[type];
         this.pulse = 0;
+
+        // Despawn timer
+        this.spawnTime = Date.now();
+        this.lifetime = 10000; // 10 seconds
     }
 
     update(time, delta) {
         this.pulse += delta * 0.005;
+    }
+
+    isExpired() {
+        return Date.now() - this.spawnTime > this.lifetime;
+    }
+
+
+    export const FOOD_TYPES = {
+        'normal': { color: 0xff5050, glow: 0xff7878, score: 10, chance: 70, speedMod: 0 },
+        'gold': { color: 0xffd700, glow: 0xffff96, score: 50, chance: 10, speedMod: 0 },
+        'speed': { color: 0x00ffff, glow: 0x64ffff, score: 20, chance: 10, speedMod: 2 },
+        'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -2 }
+    };
+
+export default class Food {
+    constructor(scene, x, y, type, blockSize) {
+        this.scene = scene;
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.blockSize = blockSize;
+        this.data = FOOD_TYPES[type];
+        this.pulse = 0;
+
+        // Despawn timer
+        this.spawnTime = Date.now();
+        this.lifetime = 10000; // 10 seconds
+    }
+
+    update(time, delta) {
+        this.pulse += delta * 0.005;
+    }
+
+    isExpired() {
+        return Date.now() - this.spawnTime > this.lifetime;
+    }
+
+    getTimeRemaining() {
+        return Math.max(0, this.lifetime - (Date.now() - this.spawnTime));
     }
 
     draw(graphics) {
@@ -31,9 +74,11 @@ export default class Food {
 
         const scale = 1 + Math.sin(this.pulse) * 0.2;
 
+        // Glow
         graphics.fillStyle(this.data.glow, 0.3);
         graphics.fillCircle(cx, cy, (this.blockSize * 0.8) * scale);
 
+        // Core
         graphics.fillStyle(this.data.color, 1);
         graphics.fillRect(
             cx - (this.blockSize / 2) * 0.8,
@@ -41,5 +86,16 @@ export default class Food {
             this.blockSize * 0.8,
             this.blockSize * 0.8
         );
+
+        // Timer bar
+        const timePercent = this.getTimeRemaining() / this.lifetime;
+        const barWidth = this.blockSize * 0.8;
+        const barHeight = 3;
+
+        graphics.fillStyle(0x000000, 0.5);
+        graphics.fillRect(cx - barWidth / 2, py - 5, barWidth, barHeight);
+
+        graphics.fillStyle(timePercent > 0.3 ? 0x00ff00 : 0xff0000, 1);
+        graphics.fillRect(cx - barWidth / 2, py - 5, barWidth * timePercent, barHeight);
     }
 }
