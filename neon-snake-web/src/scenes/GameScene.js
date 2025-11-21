@@ -30,6 +30,8 @@ export default class GameScene extends Phaser.Scene {
         this.border.strokeRect(0, 0, this.gridWidth * this.blockSize, this.gridHeight * this.blockSize);
 
         this.turboEndTime = 0;
+        this.wallWrapActive = false;
+        this.wallWrapEndTime = 0;
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupTouchControls();
@@ -168,6 +170,8 @@ export default class GameScene extends Phaser.Scene {
         this.moveInterval = isMobile ? 100 : 67;
         this.moveQueue = [];
         this.turboEndTime = 0;
+        this.wallWrapActive = false;
+        this.wallWrapEndTime = 0;
         this.baseFoodCount = 2;
 
         if (this.gameOverText) {
@@ -242,6 +246,11 @@ export default class GameScene extends Phaser.Scene {
 
         const effectiveInterval = this.turboEndTime > Date.now() ? this.moveInterval / 2 : this.moveInterval;
 
+        // Check Neo state
+        if (this.wallWrapActive && Date.now() > this.wallWrapEndTime) {
+            this.wallWrapActive = false;
+        }
+
         if (time > this.lastMoveTime + effectiveInterval) {
             this.lastMoveTime = time;
 
@@ -254,8 +263,28 @@ export default class GameScene extends Phaser.Scene {
 
                 this.snake.update(time);
 
-                if (this.snake.checkCollision(this.gridWidth, this.gridHeight)) {
-                    this.gameOver();
+                // Custom collision check for Neo mode
+                const head = this.snake.body[0];
+                if (this.wallWrapActive) {
+                    // Wrap logic
+                    if (head.x < 0) head.x = this.gridWidth - 1;
+                    else if (head.x >= this.gridWidth) head.x = 0;
+
+                    if (head.y < 0) head.y = this.gridHeight - 1;
+                    else if (head.y >= this.gridHeight) head.y = 0;
+
+                    // Still check for self-collision
+                    for (let i = 1; i < this.snake.body.length; i++) {
+                        if (head.x === this.snake.body[i].x && head.y === this.snake.body[i].y) {
+                            this.gameOver();
+                            break;
+                        }
+                    }
+                } else {
+                    // Standard collision
+                    if (this.snake.checkCollision(this.gridWidth, this.gridHeight)) {
+                        this.gameOver();
+                    }
                 }
 
                 this.checkFoodCollision();
@@ -264,6 +293,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.graphics.clear();
         this.drawGrid();
+        this.updateBorder(); // Redraw border based on state
 
         for (let i = this.foods.length - 1; i >= 0; i--) {
             if (this.foods[i].isExpired()) {
@@ -313,6 +343,12 @@ export default class GameScene extends Phaser.Scene {
                     this.heartEmitter.explode(10, food.x * this.blockSize + this.blockSize / 2, food.y * this.blockSize + this.blockSize / 2);
                 }
 
+                if (food.data.special === 'neo') {
+                    this.wallWrapActive = true;
+                    this.wallWrapEndTime = Date.now() + 10000;
+                    this.cameras.main.flash(300, 0, 255, 0); // Green flash
+                }
+
                 this.score += food.data.score;
                 this.snake.grow();
 
@@ -332,6 +368,28 @@ export default class GameScene extends Phaser.Scene {
                 this.cameras.main.shake(100, 0.005);
             }
         }
+    }
+
+    updateBorder() {
+        this.border.clear();
+
+        let color = 0xff0000; // Default Red
+        let alpha = 1;
+
+        if (this.wallWrapActive) {
+            color = 0x00ff00; // Neo Green
+            const timeRemaining = this.wallWrapEndTime - Date.now();
+
+            if (timeRemaining < 3000) {
+                // Blink every 200ms
+                if (Math.floor(Date.now() / 200) % 2 === 0) {
+                    color = 0xff0000; // Flash back to red
+                }
+            }
+        }
+
+        this.border.lineStyle(4, color, alpha);
+        this.border.strokeRect(0, 0, this.gridWidth * this.blockSize, this.gridHeight * this.blockSize);
     }
 
     drawGrid() {
