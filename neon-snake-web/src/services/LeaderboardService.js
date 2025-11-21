@@ -15,22 +15,30 @@ const database = firebase.database();
 
 class LeaderboardService {
     constructor() {
-        this.leaderboardRef = database.ref('leaderboard');
+        this.db = database;
         this.maxScores = 100;
     }
 
-    async saveScore(name, score) {
+    getRef(platform) {
+        // If platform is mobile, use 'leaderboard_mobile'
+        // Otherwise (pc or undefined), use 'leaderboard' to keep old scores
+        const path = platform === 'mobile' ? 'leaderboard_mobile' : 'leaderboard';
+        return this.db.ref(path);
+    }
+
+    async saveScore(name, score, platform) {
         try {
             const timestamp = Date.now();
             const scoreData = {
                 name: name.substring(0, 20),
                 score: score,
                 timestamp: timestamp,
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                platform: platform || 'pc'
             };
 
-            await this.leaderboardRef.push(scoreData);
-            console.log('Score saved to global leaderboard:', scoreData);
+            await this.getRef(platform).push(scoreData);
+            console.log(`Score saved to ${platform} leaderboard:`, scoreData);
             return true;
         } catch (error) {
             console.error('Error saving score to Firebase:', error);
@@ -38,9 +46,13 @@ class LeaderboardService {
         }
     }
 
-    async getTopScores(limit = 100) {
+    async getTopScores(limit = 100, platform) {
         try {
-            const snapshot = await this.leaderboardRef
+            if (platform === 'global') {
+                return this.getGlobalScores(limit);
+            }
+
+            const snapshot = await this.getRef(platform)
                 .orderByChild('score')
                 .limitToLast(limit)
                 .once('value');
@@ -61,9 +73,34 @@ class LeaderboardService {
         }
     }
 
-    async getPlayerRank(score) {
+    async getGlobalScores(limit) {
         try {
-            const allScores = await this.getTopScores(1000);
+            const [pcSnapshot, mobileSnapshot] = await Promise.all([
+                this.db.ref('leaderboard').orderByChild('score').limitToLast(limit).once('value'),
+                this.db.ref('leaderboard_mobile').orderByChild('score').limitToLast(limit).once('value')
+            ]);
+
+            const scores = [];
+
+            pcSnapshot.forEach((child) => {
+                scores.push({ id: child.key, ...child.val(), platform: 'pc' });
+            });
+
+            mobileSnapshot.forEach((child) => {
+                scores.push({ id: child.key, ...child.val(), platform: 'mobile' });
+            });
+
+            scores.sort((a, b) => b.score - a.score);
+            return scores.slice(0, limit);
+        } catch (error) {
+            console.error('Error fetching global scores:', error);
+            return [];
+        }
+    }
+
+    async getPlayerRank(score, platform) {
+        try {
+            const allScores = await this.getTopScores(1000, platform);
 
             const rank = allScores.findIndex(s => s.score <= score) + 1;
             const actualRank = rank === 0 ? allScores.length + 1 : rank;
@@ -78,13 +115,54 @@ class LeaderboardService {
         }
     }
 
-    async getTotalPlayers() {
+    async getTotalPlayers(platform) {
         try {
-            const snapshot = await this.leaderboardRef.once('value');
+            const snapshot = await this.getRef(platform).once('value');
             return snapshot.numChildren();
         } catch (error) {
             console.error('Error getting total players:', error);
             return 0;
+        }
+    }
+
+    async migrateLegacyMobileScores() {
+        const mobileNames = [
+            'mærye', 'wenche', 'martin mobil', 'brage er best', 'martin er best', 'viktor'
+        ];
+
+        try {
+            const snapshot = await this.db.ref('leaderboard').once('value');
+            const updates = {};
+            let count = 0;
+
+            snapshot.forEach((child) => {
+                const data = child.val();
+                const name = (data.name || '').toLowerCase();
+
+                // Check if name contains any of the mobile names
+                if (mobileNames.some(mName => name.includes(mName))) {
+                    // Add to mobile leaderboard
+                    const newKey = this.db.ref('leaderboard_mobile').push().key;
+                    updates[`leaderboard_mobile/${newKey}`] = {
+                        ...data,
+                        platform: 'mobile'
+                    };
+
+                    // Remove from PC leaderboard
+                    updates[`leaderboard/${child.key}`] = null;
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                await this.db.ref().update(updates);
+                console.log(`Migrated ${count} scores to mobile.`);
+                return count;
+            }
+            return 0;
+        } catch (error) {
+            console.error('Migration failed:', error);
+            return -1;
         }
     }
 }

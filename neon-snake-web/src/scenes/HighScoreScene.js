@@ -8,9 +8,31 @@ export default class HighScoreScene extends Phaser.Scene {
     create() {
         this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.8).setOrigin(0);
 
-        this.add.text(this.scale.width / 2, 40, '🌍 GLOBAL LEADERBOARD', {
+        this.add.text(this.scale.width / 2, 30, '🏆 LEADERBOARD', {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '32px', color: '#00ffff'
         }).setOrigin(0.5);
+
+        // Tabs
+        this.tabs = [];
+        const tabNames = ['Global', 'Mobile'];
+        const tabWidth = 100;
+        const startX = this.scale.width / 2 - (tabWidth / 2); // Center for 2 tabs
+
+        tabNames.forEach((name, index) => {
+            const x = startX + (index * tabWidth) - (tabWidth / 2) + (index === 0 ? -10 : 10); // Slight adjustment for spacing
+            const tabX = (this.scale.width / 2) + (index === 0 ? -60 : 60);
+
+            const tab = this.add.text(tabX, 70, name, {
+                fontFamily: 'Arial', fontSize: '18px', color: '#888888'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            tab.name = name.toLowerCase();
+            tab.on('pointerdown', () => this.switchTab(tab.name));
+            this.tabs.push(tab);
+        });
+
+        this.currentTab = 'global';
+        this.updateTabs();
 
         this.scrollY = 0;
         this.maxScroll = 0;
@@ -31,6 +53,35 @@ export default class HighScoreScene extends Phaser.Scene {
             this.scene.stop();
             this.scene.resume('GameScene');
         });
+
+        // Scroll to Top Button
+        this.scrollTopBtn = this.add.text(this.scale.width - 30, this.scale.height - 100, '⬆️ TOP', {
+            fontFamily: 'Arial', fontSize: '16px', color: '#00ffff', backgroundColor: '#000000', padding: { x: 5, y: 5 }
+        }).setOrigin(1, 1).setInteractive({ useHandCursor: true }).setScrollFactor(0).setVisible(false);
+
+        this.scrollTopBtn.on('pointerdown', () => {
+            this.scrollY = 0;
+            this.updateScrollPosition();
+        });
+    }
+
+    switchTab(tabName) {
+        if (this.currentTab === tabName) return;
+        this.currentTab = tabName;
+        this.updateTabs();
+        this.displayScores();
+    }
+
+    updateTabs() {
+        this.tabs.forEach(tab => {
+            if (tab.name === this.currentTab) {
+                tab.setColor('#00ffff');
+                tab.setFontStyle('bold');
+            } else {
+                tab.setColor('#888888');
+                tab.setFontStyle('normal');
+            }
+        });
     }
 
     setupScrolling() {
@@ -44,7 +95,7 @@ export default class HighScoreScene extends Phaser.Scene {
         let dragStartScrollY = 0;
 
         this.input.on('pointerdown', (pointer) => {
-            if (pointer.y > 90 && pointer.y < this.scale.height - 80) {
+            if (pointer.y > 100 && pointer.y < this.scale.height - 80) {
                 dragStartY = pointer.y;
                 dragStartScrollY = this.scrollY;
             }
@@ -66,6 +117,9 @@ export default class HighScoreScene extends Phaser.Scene {
 
     updateScrollPosition() {
         this.scoresContainer.y = -this.scrollY;
+        if (this.scrollTopBtn) {
+            this.scrollTopBtn.setVisible(this.scrollY > 200);
+        }
     }
 
     async displayScores() {
@@ -76,21 +130,16 @@ export default class HighScoreScene extends Phaser.Scene {
         }).setOrigin(0.5);
         this.scoresContainer.add(loadingText);
 
-        this.allScores = await LeaderboardService.getTopScores(1000);
+        this.allScores = await LeaderboardService.getTopScores(1000, this.currentTab);
         this.scoresContainer.removeAll(true);
 
         if (this.allScores.length === 0) {
-            const noScoresText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'No global scores yet!\nBe the first!', {
+            const noScoresText = this.add.text(this.scale.width / 2, this.scale.height / 2, `No scores yet for ${this.currentTab}!\nBe the first!`, {
                 fontFamily: 'Arial', fontSize: '20px', color: '#888888', align: 'center'
             }).setOrigin(0.5);
             this.scoresContainer.add(noScoresText);
             return;
         }
-
-        const totalText = this.add.text(this.scale.width / 2, 85, `${this.allScores.length} players worldwide • Scroll to see all`, {
-            fontFamily: 'Arial', fontSize: '16px', color: '#888888'
-        }).setOrigin(0.5);
-        this.scoresContainer.add(totalText);
 
         let y = 120;
         this.allScores.forEach((entry, index) => {
@@ -116,7 +165,13 @@ export default class HighScoreScene extends Phaser.Scene {
                 fontFamily: 'Arial', fontSize: '18px', color: color
             }).setOrigin(0, 0.5);
 
-            const nameText = this.add.text(this.scale.width / 2 - 110, y, entry.name, {
+            // Add icon based on platform
+            let icon = '';
+            if (this.currentTab === 'global') {
+                icon = entry.platform === 'mobile' ? '📱 ' : '💻 ';
+            }
+
+            const nameText = this.add.text(this.scale.width / 2 - 110, y, icon + entry.name, {
                 fontFamily: 'Arial', fontSize: '18px', color: isPlayerScore ? '#00ff00' : '#ffffff'
             }).setOrigin(0, 0.5);
 

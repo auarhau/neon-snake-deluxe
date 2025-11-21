@@ -350,29 +350,292 @@ export default class GameScene extends Phaser.Scene {
         this.snake.alive = false;
         this.gameOverText.setVisible(true);
 
-        const playerName = prompt('Enter your name:', 'Player') || 'Player';
-
-        if (this.score > 0 || playerName !== 'Player') {
-            localStorage.setItem('neon_snake_last_score', this.score.toString());
-
-            const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
-            scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
-            scores.sort((a, b) => b.score - a.score);
-            localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
-
-            await LeaderboardService.saveScore(playerName, this.score);
-
-            const rankInfo = await LeaderboardService.getPlayerRank(this.score);
-
-            if (this.score > this.highscore) {
-                this.highscore = this.score;
-                this.highscoreText.setText(`High: ${this.highscore}`);
-                this.gameOverText.setText(`NEW HIGHSCORE!\nGlobal Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
-            } else {
-                this.gameOverText.setText(`GAME OVER\nGlobal Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
+        if (this.foods) {
+            for (const food of this.foods) {
+                food.destroy();
             }
+        }
+
+        this.foods = [];
+        this.score = 0;
+        const isMobile = this.scale.width < 600;
+        this.moveInterval = isMobile ? 100 : 67;
+        this.moveQueue = [];
+        this.turboEndTime = 0;
+        this.baseFoodCount = 2;
+
+        if (this.gameOverText) {
+            this.gameOverText.setVisible(false);
+        }
+        if (this.scoreText) {
+            this.scoreText.setText('Score: 0');
+        }
+
+        this.spawnFood();
+        this.spawnFood();
+    }
+
+    spawnFood() {
+        // Calculate total weight dynamically
+        let totalWeight = 0;
+        for (const data of Object.values(FOOD_TYPES)) {
+            totalWeight += data.chance;
+        }
+
+        const rand = Math.random() * totalWeight;
+        let cumulative = 0;
+        let type = 'normal';
+
+        for (const [key, data] of Object.entries(FOOD_TYPES)) {
+            cumulative += data.chance;
+            if (rand <= cumulative) {
+                type = key;
+                break;
+            }
+        }
+
+        let x, y;
+        let valid = false;
+        while (!valid) {
+            x = Phaser.Math.Between(0, this.gridWidth - 1);
+            y = Phaser.Math.Between(0, this.gridHeight - 1);
+
+            valid = true;
+            for (const segment of this.snake.body) {
+                if (segment.x === x && segment.y === y) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid) {
+                for (const food of this.foods) {
+                    if (food.x === x && food.y === y) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        this.foods.push(new Food(this, x, y, type, this.blockSize));
+    }
+
+    update(time, delta) {
+        if (this.snake.alive) {
+            // Check for new inputs and queue them
+            if (this.cursors.left.isDown) {
+                this.queueMove(-1, 0);
+            } else if (this.cursors.right.isDown) {
+                this.queueMove(1, 0);
+            } else if (this.cursors.up.isDown) {
+                this.queueMove(0, -1);
+            } else if (this.cursors.down.isDown) {
+                this.queueMove(0, 1);
+            }
+        }
+
+        const effectiveInterval = this.turboEndTime > Date.now() ? this.moveInterval / 2 : this.moveInterval;
+
+        if (time > this.lastMoveTime + effectiveInterval) {
+            this.lastMoveTime = time;
+
+            if (this.snake.alive) {
+                // Apply next move from queue if available
+                if (this.moveQueue.length > 0) {
+                    const nextMove = this.moveQueue.shift();
+                    this.snake.setDirection(nextMove.x, nextMove.y);
+                }
+
+                this.snake.update(time);
+
+                if (this.snake.checkCollision(this.gridWidth, this.gridHeight)) {
+                    this.gameOver();
+                }
+
+                this.checkFoodCollision();
+            }
+        }
+
+        this.graphics.clear();
+        this.drawGrid();
+
+        for (let i = this.foods.length - 1; i >= 0; i--) {
+            if (this.foods[i].isExpired()) {
+                this.foods[i].destroy();
+                this.foods.splice(i, 1);
+
+                if (this.foods.length < this.baseFoodCount) {
+                    this.spawnFood();
+                }
+            }
+        }
+
+        for (const food of this.foods) {
+            food.update(time, delta);
+            food.draw(this.graphics);
+        }
+
+        this.snake.draw(this.graphics);
+    }
+
+    checkFoodCollision() {
+        const head = this.snake.body[0];
+
+        for (let i = this.foods.length - 1; i >= 0; i--) {
+            const food = this.foods[i];
+            if (head.x === food.x && food.y === food.y) {
+                if (food.data.special === 'death') {
+                    food.destroy();
+                    this.foods.splice(i, 1);
+                    this.gameOver();
+                    return;
+                }
+
+                if (food.data.special === 'turbo') {
+                    this.turboEndTime = Date.now() + 5000;
+                    this.cameras.main.flash(200, 255, 0, 255);
+                }
+
+                if (food.data.special === 'bomb') {
+                    for (let j = 0; j < 10; j++) {
+                        this.spawnFood();
+                    }
+                    this.cameras.main.shake(300, 0.01);
+                }
+
+                if (food.data.special === 'ladybug') {
+                    this.heartEmitter.explode(10, food.x * this.blockSize + this.blockSize / 2, food.y * this.blockSize + this.blockSize / 2);
+                }
+
+                this.score += food.data.score;
+                this.snake.grow();
+
+                if (food.data.speedMod !== 0) {
+                    this.moveInterval -= food.data.speedMod * 2;
+                    this.moveInterval = Phaser.Math.Clamp(this.moveInterval, 30, 200);
+                }
+
+                food.destroy();
+                this.foods.splice(i, 1);
+
+                if (this.foods.length < this.baseFoodCount) {
+                    this.spawnFood();
+                }
+
+                this.scoreText.setText(`Score: ${this.score}`);
+                this.cameras.main.shake(100, 0.005);
+            }
+        }
+    }
+
+    drawGrid() {
+        this.graphics.lineStyle(1, 0x191923);
+        for (let x = 0; x <= this.scale.width; x += this.blockSize * 2) {
+            this.graphics.moveTo(x, 0);
+            this.graphics.lineTo(x, this.scale.height);
+        }
+        for (let y = 0; y <= this.scale.height; y += this.blockSize * 2) {
+            this.graphics.moveTo(0, y);
+            this.graphics.lineTo(this.scale.width, y);
+        }
+        this.graphics.strokePath();
+    }
+
+    async gameOver() {
+        this.snake.alive = false;
+        this.gameOverText.setVisible(true);
+        this.gameOverText.setText(`GAME OVER\nScore: ${this.score}`);
+
+        if (this.score > 0) {
+            this.createNameInput();
         } else {
             this.gameOverText.setText(`GAME OVER\nTap to Restart`);
+            this.input.once('pointerdown', () => this.resetGame());
         }
+    }
+
+    createNameInput() {
+        const element = document.createElement('div');
+        element.style.position = 'absolute';
+        element.style.top = '50%';
+        element.style.left = '50%';
+        element.style.transform = 'translate(-50%, -50%)';
+        element.style.padding = '20px';
+        element.style.background = 'rgba(0, 0, 0, 0.9)';
+        element.style.border = '2px solid #00ffff';
+        element.style.borderRadius = '10px';
+        element.style.textAlign = 'center';
+        element.style.zIndex = '1000';
+
+        const title = document.createElement('h3');
+        title.innerText = 'Enter Your Name';
+        title.style.color = '#00ffff';
+        title.style.fontFamily = 'Arial, sans-serif';
+        title.style.margin = '0 0 15px 0';
+        element.appendChild(title);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 15;
+        input.value = localStorage.getItem('neon_snake_last_name') || 'Player';
+        input.style.padding = '10px';
+        input.style.fontSize = '16px';
+        input.style.borderRadius = '5px';
+        input.style.border = 'none';
+        input.style.marginBottom = '15px';
+        input.style.width = '200px';
+        element.appendChild(input);
+
+        const button = document.createElement('button');
+        button.innerText = 'Submit Score';
+        button.style.display = 'block';
+        button.style.margin = '0 auto';
+        button.style.padding = '10px 20px';
+        button.style.background = '#00ffff';
+        button.style.color = '#000';
+        button.style.border = 'none';
+        button.style.borderRadius = '5px';
+        button.style.cursor = 'pointer';
+        button.style.fontSize = '16px';
+        button.style.fontWeight = 'bold';
+
+        button.onclick = async () => {
+            const name = input.value.trim() || 'Player';
+            localStorage.setItem('neon_snake_last_name', name);
+            document.body.removeChild(element);
+
+            await this.submitScore(name);
+        };
+
+        element.appendChild(button);
+        document.body.appendChild(element);
+        input.focus();
+    }
+
+    async submitScore(playerName) {
+        localStorage.setItem('neon_snake_last_score', this.score.toString());
+
+        const scores = JSON.parse(localStorage.getItem('neon_snake_highscores') || '[]');
+        scores.push({ name: playerName, score: this.score, date: new Date().toISOString() });
+        scores.sort((a, b) => b.score - a.score);
+        localStorage.setItem('neon_snake_highscores', JSON.stringify(scores.slice(0, 10)));
+
+        const platform = this.scale.width < 600 ? 'mobile' : 'pc';
+        await LeaderboardService.saveScore(playerName, this.score, platform);
+
+        const rankInfo = await LeaderboardService.getPlayerRank(this.score, platform);
+
+        if (this.score > this.highscore) {
+            this.highscore = this.score;
+            this.highscoreText.setText(`High: ${this.highscore}`);
+            this.gameOverText.setText(`NEW HIGHSCORE!\n${platform.toUpperCase()} Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
+        } else {
+            this.gameOverText.setText(`GAME OVER\n${platform.toUpperCase()} Rank: #${rankInfo.rank}/${rankInfo.total}\nTap to Restart`);
+        }
+
+        // Add a small delay before allowing restart to prevent accidental clicks
+        this.time.delayedCall(500, () => {
+            this.input.once('pointerdown', () => this.resetGame());
+        });
     }
 }
