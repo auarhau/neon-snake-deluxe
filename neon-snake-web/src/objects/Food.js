@@ -2,13 +2,14 @@
 export const FOOD_TYPES = {
     'normal': { color: 0xff5050, glow: 0xff7878, score: 10, chance: 50, speedMod: 0, special: null },
     'gold': { color: 0xffd700, glow: 0xffff96, score: 50, chance: 10, speedMod: 0, special: null },
-    'speed': { color: 0x00ffff, glow: 0x64ffff, score: 20, chance: 10, speedMod: 5, special: null },
-    'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -7, special: null },
+    'speed': { color: 0x00ffff, glow: 0x64ffff, score: 20, chance: 10, speedMod: 8, special: null },
+    'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -8, special: null },
     'skull': { color: 0xff0000, glow: 0xff4444, score: 0, chance: 5, speedMod: 0, special: 'death' },
     'turbo': { color: 0xff00ff, glow: 0xff66ff, score: 30, chance: 8, speedMod: 0, special: 'turbo' },
     'bomb': { color: 0xffaa00, glow: 0xffcc44, score: 100, chance: 7, speedMod: 0, special: 'bomb' },
     'ladybug': { color: 0xff0000, glow: 0xff5555, score: 150, chance: 7, speedMod: 0, special: 'ladybug' },
-    'neo': { color: 0x00ff00, glow: 0x00ff00, score: 30, chance: 7, speedMod: 0, special: 'neo' }
+    'neo': { color: 0x00ff00, glow: 0x00ff00, score: 30, chance: 7, speedMod: 0, special: 'neo' },
+    'sixseven': { color: 0xffaa00, glow: 0xffcc66, score: 20, chance: 7, speedMod: 0, special: 'sixseven' }
 };
 
 export default class Food {
@@ -102,6 +103,20 @@ export default class Food {
             graphics.moveTo(cx - 1, cy - 1);
             graphics.lineTo(cx + 1, cy - 1);
             graphics.strokePath();
+        } else if (this.type === 'sixseven') {
+            // 6-7 meme - draw the numbers
+            graphics.fillStyle(0xffaa00, 1);
+
+            // Draw "6" on left side
+            graphics.fillRect(cx - 7, cy - 5, 2, 10); // vertical line
+            graphics.fillRect(cx - 7, cy - 5, 5, 2);  // top horizontal
+            graphics.fillRect(cx - 7, cy - 1, 5, 2);  // middle horizontal
+            graphics.fillRect(cx - 7, cy + 3, 5, 2);  // bottom horizontal
+            graphics.fillRect(cx - 4, cy + 1, 2, 4);  // bottom right vertical
+
+            // Draw "7" on right side
+            graphics.fillRect(cx + 2, cy - 5, 5, 2);  // top horizontal
+            graphics.fillRect(cx + 5, cy - 3, 2, 8);  // diagonal-ish vertical
         } else {
             graphics.fillStyle(this.data.color, 1);
             graphics.fillRect(
@@ -135,6 +150,8 @@ export default class Food {
                 labelText = '🐞 150';
             } else if (this.type === 'neo') {
                 labelText = '🕶️ NEO';
+            } else if (this.type === 'sixseven') {
+                labelText = '6-7';
             } else {
                 labelText = `+${this.data.score}`;
                 if (this.data.speedMod > 0) labelText += ' ⚡';

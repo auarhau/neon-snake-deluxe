@@ -386,6 +386,63 @@ export default class GameScene extends Phaser.Scene {
                     this.cameras.main.flash(300, 0, 255, 0); // Green flash
                 }
 
+                if (food.data.special === 'sixseven') {
+                    // Create juggling animation
+                    const px = food.x * this.blockSize + this.blockSize / 2;
+                    const py = food.y * this.blockSize + this.blockSize / 2;
+
+                    // Create kid juggler
+                    const juggler = this.add.text(px, py, '🧒', {
+                        fontFamily: 'Arial',
+                        fontSize: '32px'
+                    }).setOrigin(0.5);
+
+                    // Create floating 6 and 7
+                    const six = this.add.text(px - 15, py - 20, '6', {
+                        fontFamily: 'Arial',
+                        fontSize: '20px',
+                        color: '#ffaa00',
+                        fontStyle: 'bold'
+                    }).setOrigin(0.5);
+
+                    const seven = this.add.text(px + 15, py - 20, '7', {
+                        fontFamily: 'Arial',
+                        fontSize: '20px',
+                        color: '#ffaa00',
+                        fontStyle: 'bold'
+                    }).setOrigin(0.5);
+
+                    // Animate juggling (5 seconds)
+                    this.tweens.add({
+                        targets: juggler,
+                        y: py - 60,
+                        alpha: 0,
+                        duration: 5000,
+                        ease: 'Power2',
+                        onComplete: () => juggler.destroy()
+                    });
+
+                    this.tweens.add({
+                        targets: six,
+                        y: py - 80,
+                        x: px - 30,
+                        alpha: 0,
+                        duration: 3000,
+                        ease: 'Sine.easeInOut',
+                        onComplete: () => six.destroy()
+                    });
+
+                    this.tweens.add({
+                        targets: seven,
+                        y: py - 70,
+                        x: px + 30,
+                        alpha: 0,
+                        duration: 3000,
+                        ease: 'Sine.easeInOut',
+                        onComplete: () => seven.destroy()
+                    });
+                }
+
                 this.score += food.data.score;
                 this.snake.grow();
 
