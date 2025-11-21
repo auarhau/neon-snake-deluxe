@@ -44,6 +44,16 @@ export default class GameScene extends Phaser.Scene {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '20px', color: '#ffd700'
         }).setOrigin(1, 0);
 
+        // Pause button in the middle
+        this.pauseButton = this.add.text(this.scale.width / 2, 10, '⏸️', {
+            fontFamily: 'Arial', fontSize: '24px', color: '#ffffff'
+        }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+
+        this.pauseButton.on('pointerdown', (pointer) => {
+            pointer.event.stopPropagation();
+            this.togglePause();
+        });
+
         const hsButton = this.add.text(this.scale.width - 10, 40, '🏆 Leaders', {
             fontFamily: 'Arial', fontSize: '16px', color: '#00ffff'
         }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
@@ -57,6 +67,12 @@ export default class GameScene extends Phaser.Scene {
         this.gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER\nTap to Restart', {
             fontFamily: 'Arial Rounded MT Bold', fontSize: '40px', color: '#ff3232', align: 'center'
         }).setOrigin(0.5).setVisible(false);
+
+        this.pausedText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'PAUSED\nTap to Resume', {
+            fontFamily: 'Arial Rounded MT Bold', fontSize: '40px', color: '#00ffff', align: 'center'
+        }).setOrigin(0.5).setVisible(false);
+
+        this.isPaused = false;
 
         this.resetGame();
 
@@ -174,6 +190,13 @@ export default class GameScene extends Phaser.Scene {
         this.wallWrapEndTime = 0;
         this.baseFoodCount = 2;
 
+        // Reset pause state
+        if (this.isPaused) {
+            this.isPaused = false;
+            this.pausedText.setVisible(false);
+            this.pauseButton.setText('⏸️');
+        }
+
         if (this.gameOverText) {
             this.gameOverText.setVisible(false);
         }
@@ -231,6 +254,20 @@ export default class GameScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        // Skip game logic if paused, but still render
+        if (this.isPaused) {
+            this.graphics.clear();
+            this.drawGrid();
+            this.updateBorder();
+
+            for (const food of this.foods) {
+                food.draw(this.graphics);
+            }
+
+            this.snake.draw(this.graphics);
+            return;
+        }
+
         if (this.snake.alive) {
             // Check for new inputs and queue them
             if (this.cursors.left.isDown) {
@@ -406,6 +443,32 @@ export default class GameScene extends Phaser.Scene {
             this.graphics.lineTo(width, y);
         }
         this.graphics.strokePath();
+    }
+
+    togglePause() {
+        if (this.snake && !this.snake.alive) {
+            // Don't allow pausing when game is over
+            return;
+        }
+
+        this.isPaused = !this.isPaused;
+
+        if (this.isPaused) {
+            this.pausedText.setVisible(true);
+            this.pauseButton.setText('▶️');
+
+            // Add click listener to resume
+            this.input.once('pointerdown', (pointer) => {
+                // Check if click wasn't on the pause button itself
+                const bounds = this.pauseButton.getBounds();
+                if (!bounds.contains(pointer.x, pointer.y)) {
+                    this.togglePause();
+                }
+            });
+        } else {
+            this.pausedText.setVisible(false);
+            this.pauseButton.setText('⏸️');
+        }
     }
 
     async gameOver() {
