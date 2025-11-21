@@ -38,6 +38,7 @@ export default class HighScoreScene extends Phaser.Scene {
         this.maxScroll = 0;
         this.allScores = [];
         this.lastScore = parseInt(localStorage.getItem('neon_snake_last_score') || '0');
+        this.lastName = localStorage.getItem('neon_snake_last_name') || '';
 
         this.scoresContainer = this.add.container(0, 0);
         this.setupScrolling();
@@ -110,7 +111,7 @@ export default class HighScoreScene extends Phaser.Scene {
             }
         });
 
-        this.input.on('pointerup', () => {
+        this.input.on('pointerup', (pointer) => {
             dragStartY = 0;
         });
     }
@@ -151,7 +152,8 @@ export default class HighScoreScene extends Phaser.Scene {
             else if (index === 1) color = '#c0c0c0';
             else if (index === 2) color = '#cd7f32';
 
-            if (entry.score === this.lastScore) {
+            // Highlight if score AND name match
+            if (entry.score === this.lastScore && entry.name === this.lastName) {
                 bgColor = 0x004400;
                 isPlayerScore = true;
             }
@@ -192,7 +194,8 @@ export default class HighScoreScene extends Phaser.Scene {
 
         this.maxScroll = Math.max(0, y - this.scale.height + 100);
 
-        const playerRank = this.allScores.findIndex(s => s.score === this.lastScore);
+        // Scroll to the specific player rank
+        const playerRank = this.allScores.findIndex(s => s.score === this.lastScore && s.name === this.lastName);
         if (playerRank !== -1 && playerRank > 5) {
             this.scrollY = Math.min(playerRank * 35 - 200, this.maxScroll);
             this.updateScrollPosition();

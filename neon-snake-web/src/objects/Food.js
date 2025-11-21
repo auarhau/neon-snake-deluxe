@@ -48,7 +48,7 @@ export default class Food {
         const scale = 1 + Math.sin(this.pulse) * 0.2;
 
         graphics.fillStyle(this.data.glow, 0.3);
-        graphics.fillCircle(cx, cy, (this.blockSize * 0.8) * scale);
+        graphics.fillCircle(cx, cy, (this.blockSize / 2) * 0.8 * scale);
 
         if (this.type === 'ladybug') {
             // Body (Red) - make it slightly oval
