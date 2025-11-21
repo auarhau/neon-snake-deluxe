@@ -6,7 +6,8 @@ export const FOOD_TYPES = {
     'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -2, special: null },
     'skull': { color: 0xff0000, glow: 0xff4444, score: 0, chance: 5, speedMod: 0, special: 'death' },
     'turbo': { color: 0xff00ff, glow: 0xff66ff, score: 30, chance: 8, speedMod: 0, special: 'turbo' },
-    'bomb': { color: 0xffaa00, glow: 0xffcc44, score: 100, chance: 7, speedMod: 0, special: 'bomb' }
+    'bomb': { color: 0xffaa00, glow: 0xffcc44, score: 100, chance: 7, speedMod: 0, special: 'bomb' },
+    'ladybug': { color: 0xff0000, glow: 0xff5555, score: 150, chance: 7, speedMod: 0, special: 'ladybug' }
 };
 
 export default class Food {
@@ -49,13 +50,39 @@ export default class Food {
         graphics.fillStyle(this.data.glow, 0.3);
         graphics.fillCircle(cx, cy, (this.blockSize * 0.8) * scale);
 
-        graphics.fillStyle(this.data.color, 1);
-        graphics.fillRect(
-            cx - (this.blockSize / 2) * 0.8,
-            cy - (this.blockSize / 2) * 0.8,
-            this.blockSize * 0.8,
-            this.blockSize * 0.8
-        );
+        if (this.type === 'ladybug') {
+            // Body (Red) - make it slightly oval
+            graphics.fillStyle(0xff3333, 1);
+            graphics.fillCircle(cx, cy, (this.blockSize * 0.85) * scale / 2);
+
+            // Head (Black) - smaller and positioned clearly at the top
+            graphics.fillStyle(0x000000, 1);
+            graphics.fillCircle(cx, cy - (this.blockSize * 0.35), (this.blockSize * 0.3) * scale / 2);
+
+            // Line down the middle
+            graphics.lineStyle(1, 0x000000, 0.8);
+            graphics.beginPath();
+            graphics.moveTo(cx, cy - (this.blockSize * 0.3));
+            graphics.lineTo(cx, cy + (this.blockSize * 0.4));
+            graphics.strokePath();
+
+            // Spots (Black) - fewer and better placed
+            graphics.fillStyle(0x000000, 0.8);
+            const spotOffsetX = (this.blockSize * 0.25);
+            const spotOffsetY = (this.blockSize * 0.1);
+            graphics.fillCircle(cx - spotOffsetX, cy - spotOffsetY, 1.5);
+            graphics.fillCircle(cx + spotOffsetX, cy - spotOffsetY, 1.5);
+            graphics.fillCircle(cx - (this.blockSize * 0.15), cy + (this.blockSize * 0.2), 1.5);
+            graphics.fillCircle(cx + (this.blockSize * 0.15), cy + (this.blockSize * 0.2), 1.5);
+        } else {
+            graphics.fillStyle(this.data.color, 1);
+            graphics.fillRect(
+                cx - (this.blockSize / 2) * 0.8,
+                cy - (this.blockSize / 2) * 0.8,
+                this.blockSize * 0.8,
+                this.blockSize * 0.8
+            );
+        }
 
         const timePercent = this.getTimeRemaining() / this.lifetime;
         const barWidth = this.blockSize * 0.8;
@@ -76,6 +103,8 @@ export default class Food {
                 labelText = '⚡⚡ TURBO';
             } else if (this.type === 'bomb') {
                 labelText = '💣 BOMB';
+            } else if (this.type === 'ladybug') {
+                labelText = '🐞 150';
             } else {
                 labelText = `+${this.data.score}`;
                 if (this.data.speedMod > 0) labelText += ' ⚡';

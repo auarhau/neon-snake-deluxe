@@ -56,6 +56,25 @@ export default class GameScene extends Phaser.Scene {
         }).setOrigin(0.5).setVisible(false);
 
         this.resetGame();
+
+        // Create heart texture for particles
+        const heartGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        heartGraphics.fillStyle(0xff0000, 1);
+        heartGraphics.beginPath();
+        // Draw a simple heart shape using geometric primitives - larger
+        heartGraphics.fillCircle(9, 9, 6);
+        heartGraphics.fillCircle(21, 9, 6);
+        heartGraphics.fillTriangle(3, 9, 27, 9, 15, 27);
+        heartGraphics.generateTexture('heart', 30, 30);
+
+        this.heartEmitter = this.add.particles(0, 0, 'heart', {
+            speed: { min: 50, max: 120 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 1500,
+            gravityY: -30,
+            emitting: false
+        });
     }
 
     setupTouchControls() {
@@ -162,7 +181,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnFood() {
-        const rand = Math.random() * 100;
+        // Calculate total weight dynamically
+        let totalWeight = 0;
+        for (const data of Object.values(FOOD_TYPES)) {
+            totalWeight += data.chance;
+        }
+
+        const rand = Math.random() * totalWeight;
         let cumulative = 0;
         let type = 'normal';
 
@@ -281,6 +306,10 @@ export default class GameScene extends Phaser.Scene {
                         this.spawnFood();
                     }
                     this.cameras.main.shake(300, 0.01);
+                }
+
+                if (food.data.special === 'ladybug') {
+                    this.heartEmitter.explode(10, food.x * this.blockSize + this.blockSize / 2, food.y * this.blockSize + this.blockSize / 2);
                 }
 
                 this.score += food.data.score;
