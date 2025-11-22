@@ -11,8 +11,9 @@ let gameHeight = 700;
 if (isMobile) {
     gameWidth = 360;
     // Calculate height based on screen size, snapped to 20px grid
-    // Use slightly less than full height (90%) to be safe with browser UI bars
-    const safeHeight = Math.floor(window.innerHeight * 0.9);
+    // Use 85% of screen height to be safe with browser UI bars and padding
+    // Also subtract 20px explicitly for the top padding
+    const safeHeight = Math.floor((window.innerHeight - 20) * 0.85);
     gameHeight = Math.floor(safeHeight / 20) * 20;
     // Cap height to reasonable limits (min 400, max 800)
     gameHeight = Math.min(Math.max(gameHeight, 400), 800);
