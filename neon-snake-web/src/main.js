@@ -5,8 +5,18 @@ import HighScoreScene from './scenes/HighScoreScene.js?v=3';
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // Set game dimensions based on platform
-const gameWidth = isMobile ? 360 : 1000;  // 18 blocks mobile, 50 blocks PC
-const gameHeight = isMobile ? 600 : 700;  // 30 blocks mobile, 35 blocks PC
+let gameWidth = 1000;
+let gameHeight = 700;
+
+if (isMobile) {
+    gameWidth = 360;
+    // Calculate height based on screen size, snapped to 20px grid
+    // Use slightly less than full height (90%) to be safe with browser UI bars
+    const safeHeight = Math.floor(window.innerHeight * 0.9);
+    gameHeight = Math.floor(safeHeight / 20) * 20;
+    // Cap height to reasonable limits (min 400, max 800)
+    gameHeight = Math.min(Math.max(gameHeight, 400), 800);
+}
 
 // Make dimensions available globally for GameScene - BEFORE game creation
 window.GAME_WIDTH = gameWidth;
