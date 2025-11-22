@@ -19,11 +19,14 @@ class LeaderboardService {
         this.maxScores = 100;
     }
 
-    getRef(platform) {
-        // If platform is mobile, use 'leaderboard_mobile'
-        // Otherwise (pc or undefined), use 'leaderboard' to keep old scores
-        const path = platform === 'mobile' ? 'leaderboard_mobile' : 'leaderboard';
-        return this.db.ref(path);
+    getRef(platform, season = 'season2') {
+        // Season 1 (Legacy)
+        if (season === 'season1') {
+            return this.db.ref(platform === 'mobile' ? 'leaderboard_mobile' : 'leaderboard');
+        }
+
+        // Season 2 (Current)
+        return this.db.ref(platform === 'mobile' ? 'leaderboard_mobile_s2' : 'leaderboard_s2');
     }
 
     async saveScore(name, score, platform) {
@@ -37,8 +40,9 @@ class LeaderboardService {
                 platform: platform || 'pc'
             };
 
-            await this.getRef(platform).push(scoreData);
-            console.log(`Score saved to ${platform} leaderboard:`, scoreData);
+            // Always save to Season 2 (current)
+            await this.getRef(platform, 'season2').push(scoreData);
+            console.log(`Score saved to ${platform} leaderboard (Season 2):`, scoreData);
             return true;
         } catch (error) {
             console.error('Error saving score to Firebase:', error);
@@ -46,13 +50,13 @@ class LeaderboardService {
         }
     }
 
-    async getTopScores(limit = 100, platform) {
+    async getTopScores(limit = 100, platform, season = 'season2') {
         try {
             if (platform === 'global') {
-                return this.getGlobalScores(limit);
+                return this.getGlobalScores(limit, season);
             }
 
-            const snapshot = await this.getRef(platform)
+            const snapshot = await this.getRef(platform, season)
                 .orderByChild('score')
                 .limitToLast(limit)
                 .once('value');
@@ -68,16 +72,16 @@ class LeaderboardService {
             scores.sort((a, b) => b.score - a.score);
             return scores;
         } catch (error) {
-            console.error('Error fetching global scores:', error);
+            console.error('Error fetching scores:', error);
             return [];
         }
     }
 
-    async getGlobalScores(limit) {
+    async getGlobalScores(limit, season) {
         try {
             const [pcSnapshot, mobileSnapshot] = await Promise.all([
-                this.db.ref('leaderboard').orderByChild('score').limitToLast(limit).once('value'),
-                this.db.ref('leaderboard_mobile').orderByChild('score').limitToLast(limit).once('value')
+                this.getRef('pc', season).orderByChild('score').limitToLast(limit).once('value'),
+                this.getRef('mobile', season).orderByChild('score').limitToLast(limit).once('value')
             ]);
 
             const scores = [];
@@ -100,7 +104,8 @@ class LeaderboardService {
 
     async getPlayerRank(score, platform) {
         try {
-            const allScores = await this.getTopScores(1000, platform);
+            // Get rank from Season 2 (current)
+            const allScores = await this.getTopScores(1000, platform, 'season2');
 
             const rank = allScores.findIndex(s => s.score <= score) + 1;
             const actualRank = rank === 0 ? allScores.length + 1 : rank;

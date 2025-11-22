@@ -31,6 +31,10 @@ export default class HighScoreScene extends Phaser.Scene {
             this.tabs.push(tab);
         });
 
+        // Season Toggle
+        this.currentSeason = 'season2';
+        this.createSeasonToggle();
+
         this.currentTab = 'global';
         this.updateTabs();
 
@@ -66,6 +70,30 @@ export default class HighScoreScene extends Phaser.Scene {
         });
     }
 
+    createSeasonToggle() {
+        const toggleBg = this.add.rectangle(this.scale.width / 2, 110, 200, 30, 0x333333).setOrigin(0.5);
+
+        this.seasonText = this.add.text(this.scale.width / 2, 110, 'Season 2 (Current)', {
+            fontFamily: 'Arial', fontSize: '16px', color: '#00ff00'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.seasonText.on('pointerdown', () => {
+            this.currentSeason = this.currentSeason === 'season2' ? 'season1' : 'season2';
+            this.updateSeasonText();
+            this.displayScores();
+        });
+    }
+
+    updateSeasonText() {
+        if (this.currentSeason === 'season2') {
+            this.seasonText.setText('Season 2 (Current)');
+            this.seasonText.setColor('#00ff00');
+        } else {
+            this.seasonText.setText('Season 1 (Legacy)');
+            this.seasonText.setColor('#aaaaaa');
+        }
+    }
+
     switchTab(tabName) {
         if (this.currentTab === tabName) return;
         this.currentTab = tabName;
@@ -96,7 +124,7 @@ export default class HighScoreScene extends Phaser.Scene {
         let dragStartScrollY = 0;
 
         this.input.on('pointerdown', (pointer) => {
-            if (pointer.y > 100 && pointer.y < this.scale.height - 80) {
+            if (pointer.y > 130 && pointer.y < this.scale.height - 80) {
                 dragStartY = pointer.y;
                 dragStartScrollY = this.scrollY;
             }
@@ -131,7 +159,7 @@ export default class HighScoreScene extends Phaser.Scene {
         }).setOrigin(0.5);
         this.scoresContainer.add(loadingText);
 
-        this.allScores = await LeaderboardService.getTopScores(1000, this.currentTab);
+        this.allScores = await LeaderboardService.getTopScores(1000, this.currentTab, this.currentSeason);
         this.scoresContainer.removeAll(true);
 
         if (this.allScores.length === 0) {
@@ -142,7 +170,7 @@ export default class HighScoreScene extends Phaser.Scene {
             return;
         }
 
-        let y = 120;
+        let y = 160; // Moved down to make room for season toggle
         this.allScores.forEach((entry, index) => {
             let color = '#ffffff';
             let bgColor = null;
@@ -163,7 +191,13 @@ export default class HighScoreScene extends Phaser.Scene {
                 this.scoresContainer.add(highlight);
             }
 
-            const rankText = this.add.text(this.scale.width / 2 - 140, y, `${index + 1}.`, {
+            let rankString = '';
+            if (index < 3) {
+                rankString = '♛ ';
+            }
+            rankString += `${index + 1}.`;
+
+            const rankText = this.add.text(this.scale.width / 2 - 140, y, rankString, {
                 fontFamily: 'Arial', fontSize: '18px', color: color
             }).setOrigin(0, 0.5);
 
@@ -173,7 +207,7 @@ export default class HighScoreScene extends Phaser.Scene {
                 icon = entry.platform === 'mobile' ? '📱 ' : '💻 ';
             }
 
-            const nameText = this.add.text(this.scale.width / 2 - 110, y, icon + entry.name, {
+            const nameText = this.add.text(this.scale.width / 2 - 90, y, icon + entry.name, {
                 fontFamily: 'Arial', fontSize: '18px', color: isPlayerScore ? '#00ff00' : '#ffffff'
             }).setOrigin(0, 0.5);
 
