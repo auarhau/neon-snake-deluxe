@@ -39,16 +39,16 @@ export default class GameScene extends Phaser.Scene {
         this.setupTouchControls();
 
         this.scoreText = this.add.text(10, 10, 'Score: 0', {
-            fontFamily: 'Arial Rounded MT Bold', fontSize: '20px', color: '#ffffff'
+            fontFamily: 'Arial Rounded MT Bold', fontSize: this.isMobile ? '16px' : '20px', color: '#ffffff'
         });
 
         this.highscoreText = this.add.text(this.scale.width - 10, 10, `High: ${this.highscore}`, {
-            fontFamily: 'Arial Rounded MT Bold', fontSize: '20px', color: '#ffd700'
+            fontFamily: 'Arial Rounded MT Bold', fontSize: this.isMobile ? '16px' : '20px', color: '#ffd700'
         }).setOrigin(1, 0);
 
         // Pause button in the middle
         this.pauseButton = this.add.text(this.scale.width / 2, 10, '⏸️', {
-            fontFamily: 'Arial', fontSize: '24px', color: '#ffffff'
+            fontFamily: 'Arial', fontSize: this.isMobile ? '20px' : '24px', color: '#ffffff'
         }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
 
         this.pauseButton.on('pointerdown', (pointer) => {
@@ -67,11 +67,11 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER\nTap to Restart', {
-            fontFamily: 'Arial Rounded MT Bold', fontSize: '40px', color: '#ff3232', align: 'center'
+            fontFamily: 'Arial Rounded MT Bold', fontSize: this.isMobile ? '24px' : '40px', color: '#ff3232', align: 'center'
         }).setOrigin(0.5).setVisible(false);
 
         this.pausedText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'PAUSED\nTap to Resume', {
-            fontFamily: 'Arial Rounded MT Bold', fontSize: '40px', color: '#00ffff', align: 'center'
+            fontFamily: 'Arial Rounded MT Bold', fontSize: this.isMobile ? '24px' : '40px', color: '#00ffff', align: 'center'
         }).setOrigin(0.5).setVisible(false);
 
         this.isPaused = false;

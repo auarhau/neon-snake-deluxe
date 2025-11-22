@@ -5,8 +5,8 @@ import HighScoreScene from './scenes/HighScoreScene.js?v=3';
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // Set game dimensions based on platform
-const gameWidth = isMobile ? 200 : 1000;  // 10 blocks mobile, 50 blocks PC
-const gameHeight = isMobile ? 400 : 700;  // 20 blocks mobile, 35 blocks PC
+const gameWidth = isMobile ? 360 : 1000;  // 18 blocks mobile, 50 blocks PC
+const gameHeight = isMobile ? 600 : 700;  // 30 blocks mobile, 35 blocks PC
 
 // Make dimensions available globally for GameScene - BEFORE game creation
 window.GAME_WIDTH = gameWidth;
