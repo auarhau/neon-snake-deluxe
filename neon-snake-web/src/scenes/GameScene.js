@@ -32,6 +32,8 @@ export default class GameScene extends Phaser.Scene {
         this.turboEndTime = 0;
         this.wallWrapActive = false;
         this.wallWrapEndTime = 0;
+        this.speedModEndTime = 0;
+        this.speedModValue = 0;
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupTouchControls();
@@ -188,6 +190,8 @@ export default class GameScene extends Phaser.Scene {
         this.turboEndTime = 0;
         this.wallWrapActive = false;
         this.wallWrapEndTime = 0;
+        this.speedModEndTime = 0;
+        this.speedModValue = 0;
         this.baseFoodCount = 2;
 
         // Reset pause state
@@ -281,7 +285,17 @@ export default class GameScene extends Phaser.Scene {
             }
         }
 
-        const effectiveInterval = this.turboEndTime > Date.now() ? this.moveInterval / 2 : this.moveInterval;
+        // Check if speed modifier has expired
+        if (this.speedModEndTime > 0 && Date.now() > this.speedModEndTime) {
+            this.speedModValue = 0;
+            this.speedModEndTime = 0;
+        }
+
+        // Calculate effective interval with both turbo and speed modifiers
+        let effectiveInterval = this.moveInterval + this.speedModValue;
+        if (this.turboEndTime > Date.now()) {
+            effectiveInterval = effectiveInterval / 2;
+        }
 
         // Check Neo state
         if (this.wallWrapActive && Date.now() > this.wallWrapEndTime) {
@@ -446,9 +460,17 @@ export default class GameScene extends Phaser.Scene {
                 this.score += food.data.score;
                 this.snake.grow();
 
+                // Apply temporary speed modifier (lasts 5 seconds)
                 if (food.data.speedMod !== 0) {
-                    this.moveInterval -= food.data.speedMod * 2;
-                    this.moveInterval = Phaser.Math.Clamp(this.moveInterval, 30, 200);
+                    this.speedModValue = -food.data.speedMod * 2;
+                    this.speedModEndTime = Date.now() + 5000;
+
+                    // Visual feedback
+                    if (food.data.speedMod > 0) {
+                        this.cameras.main.flash(150, 0, 255, 255); // Cyan flash for speed
+                    } else {
+                        this.cameras.main.flash(150, 180, 120, 255); // Purple flash for slow
+                    }
                 }
 
                 food.destroy();
