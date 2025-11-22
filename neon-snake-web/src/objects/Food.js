@@ -9,7 +9,7 @@ export const FOOD_TYPES = {
     'bomb': { color: 0xffaa00, glow: 0xffcc44, score: 100, chance: 7, speedMod: 0, special: 'bomb' },
     'ladybug': { color: 0xff0000, glow: 0xff5555, score: 150, chance: 7, speedMod: 0, special: 'ladybug' },
     'neo': { color: 0x00ff00, glow: 0x00ff00, score: 30, chance: 7, speedMod: 0, special: 'neo' },
-    'sixseven': { color: 0xffaa00, glow: 0xffcc66, score: 20, chance: 7, speedMod: 0, special: 'sixseven' }
+    'sixseven': { color: 0xffaa00, glow: 0xffcc66, score: 67, chance: 6, speedMod: 0, special: 'sixseven' }
 };
 
 export default class Food {
