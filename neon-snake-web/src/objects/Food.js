@@ -3,7 +3,7 @@ export const FOOD_TYPES = {
     'normal': { color: 0xff5050, glow: 0xff7878, score: 10, chance: 50, speedMod: 0, special: null },
     'gold': { color: 0xffd700, glow: 0xffff96, score: 50, chance: 10, speedMod: 0, special: null },
     'speed': { color: 0x00ffff, glow: 0x64ffff, score: 20, chance: 10, speedMod: 8, special: null },
-    'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -8, special: null },
+    'slow': { color: 0xb450ff, glow: 0xdc78ff, score: 10, chance: 10, speedMod: -30, special: null },
     'skull': { color: 0xff0000, glow: 0xff4444, score: 0, chance: 5, speedMod: 0, special: 'death' },
     'turbo': { color: 0xff00ff, glow: 0xff66ff, score: 30, chance: 8, speedMod: 0, special: 'turbo' },
     'bomb': { color: 0xffaa00, glow: 0xffcc44, score: 100, chance: 7, speedMod: 0, special: 'bomb' },
