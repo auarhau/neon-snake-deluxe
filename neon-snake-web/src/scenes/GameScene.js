@@ -9,8 +9,8 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         this.blockSize = 20;
-        this.gridWidth = Math.floor(this.scale.width / this.blockSize);
-        this.gridHeight = Math.floor(this.scale.height / this.blockSize);
+        this.gridWidth = Math.floor((window.GAME_WIDTH || this.scale.width) / this.blockSize);
+        this.gridHeight = Math.floor((window.GAME_HEIGHT || this.scale.height) / this.blockSize);
 
         this.lastMoveTime = 0;
 
@@ -507,17 +507,16 @@ export default class GameScene extends Phaser.Scene {
         this.border.lineStyle(4, color, alpha);
         this.border.strokeRect(0, 0, this.gridWidth * this.blockSize, this.gridHeight * this.blockSize);
     }
-
     drawGrid() {
         this.graphics.lineStyle(1, 0x191923);
         const width = this.gridWidth * this.blockSize;
         const height = this.gridHeight * this.blockSize;
 
-        for (let x = 0; x <= width; x += this.blockSize * 2) {
+        for (let x = 0; x <= width; x += this.blockSize) {
             this.graphics.moveTo(x, 0);
             this.graphics.lineTo(x, height);
         }
-        for (let y = 0; y <= height; y += this.blockSize * 2) {
+        for (let y = 0; y <= height; y += this.blockSize) {
             this.graphics.moveTo(0, y);
             this.graphics.lineTo(width, y);
         }
