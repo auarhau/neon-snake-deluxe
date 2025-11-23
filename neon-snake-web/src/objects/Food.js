@@ -9,6 +9,7 @@ export const FOOD_TYPES = {
     'bomb': { color: 0xffaa00, glow: 0xffcc44, score: 100, chance: 7, speedMod: 0, special: 'bomb' },
     'ladybug': { color: 0xff0000, glow: 0xff5555, score: 150, chance: 7, speedMod: 0, special: 'ladybug' },
     'neo': { color: 0x00ff00, glow: 0x00ff00, score: 30, chance: 7, speedMod: 0, special: 'neo' },
+    'guitar': { color: 0xff6600, glow: 0xff6600, score: 55, chance: 7, speedMod: 0, special: 'guitar' },
     'sixseven': { color: 0xffaa00, glow: 0xffcc66, score: 67, chance: 6, speedMod: 0, special: 'sixseven' }
 };
 
@@ -63,8 +64,11 @@ export default class Food {
 
         const scale = 1 + Math.sin(this.pulse) * 0.2;
 
-        graphics.fillStyle(this.data.glow, 0.3);
-        graphics.fillCircle(cx, cy, (this.blockSize / 2) * 0.8 * scale);
+        // Draw glow unless this is a guitar (glow makes it hard to see)
+        if (this.type !== 'guitar') {
+            graphics.fillStyle(this.data.glow, 0.3);
+            graphics.fillCircle(cx, cy, (this.blockSize / 2) * 0.8 * scale);
+        }
 
         if (this.type === 'normal') {
             // Apple 🍎
@@ -106,31 +110,28 @@ export default class Food {
             graphics.fillPath();
 
         } else if (this.type === 'slow') {
-            // Clock/Stopwatch ⏱️ - Represents "slow"
-            // Clock face (white/light gray)
-            graphics.fillStyle(0xe0e0e0, 1); // Light gray
-            graphics.fillCircle(cx, cy, this.blockSize * 0.35);
+            // Snow Crystal ❄️ - Represents "slow/freeze"
+            graphics.lineStyle(2, 0xffffff, 1); // White lines
 
-            // Clock border (purple to match theme)
-            graphics.lineStyle(2, 0xb450ff, 1);
-            graphics.strokeCircle(cx, cy, this.blockSize * 0.35);
-
-            // Hour hand (short, pointing up-left)
-            graphics.lineStyle(2, 0x333333, 1);
+            // Main cross
             graphics.beginPath();
-            graphics.moveTo(cx, cy);
-            graphics.lineTo(cx - 3, cy - 3);
+            graphics.moveTo(cx, cy - 6);
+            graphics.lineTo(cx, cy + 6);
+            graphics.moveTo(cx - 6, cy);
+            graphics.lineTo(cx + 6, cy);
             graphics.strokePath();
 
-            // Minute hand (long, pointing down-right)
+            // Diagonal cross
             graphics.beginPath();
-            graphics.moveTo(cx, cy);
-            graphics.lineTo(cx + 4, cy + 5);
+            graphics.moveTo(cx - 4, cy - 4);
+            graphics.lineTo(cx + 4, cy + 4);
+            graphics.moveTo(cx + 4, cy - 4);
+            graphics.lineTo(cx - 4, cy + 4);
             graphics.strokePath();
 
             // Center dot
-            graphics.fillStyle(0x333333, 1);
-            graphics.fillCircle(cx, cy, 1.5);
+            graphics.fillStyle(0x00ffff, 1); // Cyan center
+            graphics.fillCircle(cx, cy, 2);
 
         } else if (this.type === 'skull') {
             // Skull 💀
@@ -235,6 +236,15 @@ export default class Food {
             graphics.moveTo(cx - 1, cy - 1);
             graphics.lineTo(cx + 1, cy - 1);
             graphics.strokePath();
+        } else if (this.type === 'guitar') {
+            // Guitar Emoji 🎸
+            if (!this.icon) {
+                this.icon = this.scene.add.text(cx, cy, '🎸', {
+                    fontSize: '20px'
+                }).setOrigin(0.5);
+            }
+            this.icon.setPosition(cx, cy);
+            this.icon.setScale(scale);
         } else if (this.type === 'sixseven') {
             // 6-7 meme - draw the numbers
             graphics.fillStyle(0xffaa00, 1);
@@ -299,6 +309,9 @@ export default class Food {
     destroy() {
         if (this.label) {
             this.label.destroy();
+        }
+        if (this.icon) {
+            this.icon.destroy();
         }
     }
 }

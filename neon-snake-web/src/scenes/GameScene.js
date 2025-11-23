@@ -8,6 +8,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this.isNameInputActive = false;
         this.blockSize = 20;
         this.gridWidth = Math.floor((window.GAME_WIDTH || this.scale.width) / this.blockSize);
         this.gridHeight = Math.floor((window.GAME_HEIGHT || this.scale.height) / this.blockSize);
@@ -145,6 +146,7 @@ export default class GameScene extends Phaser.Scene {
 
             if (!this.snake.alive) {
                 if (!this.isSwipeInProgress && swipeDuration < 300) {
+                    if (this.isNameInputActive) return;
                     this.resetGame();
                 }
             }
@@ -250,6 +252,15 @@ export default class GameScene extends Phaser.Scene {
                         valid = false;
                         break;
                     }
+                }
+            }
+
+            // Safe spawn check for skulls
+            if (valid && type === 'skull') {
+                const head = this.snake.body[0];
+                const dist = Math.abs(x - head.x) + Math.abs(y - head.y);
+                if (dist < 10) {
+                    valid = false;
                 }
             }
         }
@@ -398,6 +409,46 @@ export default class GameScene extends Phaser.Scene {
                     this.wallWrapActive = true;
                     this.wallWrapEndTime = Date.now() + 10000;
                     this.cameras.main.flash(300, 0, 255, 0); // Green flash
+                }
+
+                if (food.data.special === 'guitar') {
+                    // Create "Schfifty-Five" animation
+                    const px = food.x * this.blockSize + this.blockSize / 2;
+                    const py = food.y * this.blockSize + this.blockSize / 2;
+
+                    // Create sunglasses emoji
+                    const sunglasses = this.add.text(px, py, '😎', {
+                        fontFamily: 'Arial',
+                        fontSize: '32px'
+                    }).setOrigin(0.5);
+
+                    // Create "Schfifty-Five" text
+                    const schfiftyText = this.add.text(px, py + 25, 'Schfifty-Five!', {
+                        fontFamily: 'Arial',
+                        fontSize: '18px',
+                        color: '#ff6600',
+                        fontStyle: 'bold'
+                    }).setOrigin(0.5);
+
+                    // Animate sunglasses (float up and fade)
+                    this.tweens.add({
+                        targets: sunglasses,
+                        y: py - 60,
+                        alpha: 0,
+                        duration: 5000,
+                        ease: 'Power2',
+                        onComplete: () => sunglasses.destroy()
+                    });
+
+                    // Animate text (float up and fade)
+                    this.tweens.add({
+                        targets: schfiftyText,
+                        y: py - 40,
+                        alpha: 0,
+                        duration: 5000,
+                        ease: 'Power2',
+                        onComplete: () => schfiftyText.destroy()
+                    });
                 }
 
                 if (food.data.special === 'sixseven') {
@@ -563,6 +614,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createNameInput() {
+        this.isNameInputActive = true;
+        this.input.enabled = false; // Disable all Phaser input
         const element = document.createElement('div');
         element.style.position = 'absolute';
         element.style.top = '50%';
@@ -613,6 +666,8 @@ export default class GameScene extends Phaser.Scene {
             document.body.removeChild(element);
 
             await this.submitScore(name);
+            this.isNameInputActive = false;
+            this.input.enabled = true; // Re-enable Phaser input
         };
 
         element.appendChild(button);
